@@ -542,3 +542,24 @@ func (noRows) LastInsertId() (int64, error) {
 func (noRows) RowsAffected() (int64, error) {
 	return 0, errors.New("no RowsAffected available after DDL statement")
 }
+
+// CopyResult signals termination of a CopyIn.
+// Both Res and Err may be populated in case of a partial write.
+type CopyResult struct {
+	Res Result
+	Err error
+}
+
+// Copier is an optional interface that may be implemented by a Conn.
+type Copier interface {
+
+	// CopyIn sends a batch of data to the server in a single execution.
+	// The driver may do this asynchronously.
+	//
+	// The data channel may be buffered.
+	// The sender closes the data channel when all data is sent.
+	//
+	// Exact one of CopyResult must always be send on the result channel.
+	// Either after all data is flushed, or after encountering an error.
+	CopyIn(ctx context.Context, table string, columns ...string) (data chan<- []NamedValue, result <-chan CopyResult)
+}
